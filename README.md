@@ -2,7 +2,7 @@
 
 A small [Frappe](https://github.com/frappe/frappe) app that records employee work hours and reports **total HR cost per day**, with totals for the selected period (the current month by default).
 
-Built and tested on the Frappe **`develop`** branch (17.0.0-dev). For how the environment was set up (VirtualBox VM → Ubuntu → Frappe `develop`), see **[docs/SETUP.md](docs/SETUP.md)**.
+Built and tested on the Frappe **`develop`** branch (`407b551`, 17.0.0-dev). For how the environment was set up (VirtualBox VM → Ubuntu → Frappe `develop`), see **[docs/SETUP.md](docs/SETUP.md)**. [docs/INSTALL_LOG.md](docs/INSTALL_LOG.md) records the actual install: versions, screenshots and the problems hit along the way.
 
 ![Daily HR Cost report](docs/images/report.png)
 
@@ -116,7 +116,9 @@ hr_cost/
         └── daily_hr_cost/        # daily_hr_cost.json / .py / .js / test_daily_hr_cost.py
 docs/
 ├── SETUP.md                      # VirtualBox + Frappe develop setup procedure
-└── images/
+├── INSTALL_LOG.md                # record of the actual install (values, screenshots, issues)
+├── images/                       # app screenshots
+└── screenshots/                  # install screenshots used by INSTALL_LOG.md
 ```
 
 The DocTypes and the report were created with the site in **developer mode**. In developer mode Frappe exports standard DocTypes and reports as JSON into the app (the same thing happens when you create them in the Desk UI), which is why they can be version-controlled and installed on another site.
