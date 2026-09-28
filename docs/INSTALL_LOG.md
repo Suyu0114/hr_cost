@@ -71,7 +71,7 @@ Installer choices: [SETUP.md step 3](SETUP.md#3-install-ubuntu-server). Values o
 **SSH access verified from Windows:**
 
 ```
-(base) PS C:\Users\jing8> ssh -p 2222 frappe@127.0.0.1
+PS> ssh -p 2222 frappe@127.0.0.1
 Welcome to Ubuntu 24.04.5 LTS (GNU/Linux 6.8.0-142-generic x86_64)
 frappe@frappe-dev:~$
 ```
@@ -177,7 +177,7 @@ At this point the app had no git remote yet, so instead of `bench get-app` ([SET
 From Windows (PowerShell):
 
 ```powershell
-scp -r -P 2222 "c:\Users\jing8\Desktop\myProject\vm_linux_hr\hr_cost" frappe@127.0.0.1:/home/frappe/frappe-bench/apps/
+scp -r -P 2222 "$HOME\Desktop\myProject\vm_linux_hr\hr_cost" frappe@127.0.0.1:/home/frappe/frappe-bench/apps/
 ```
 
 In the VM, with `bench start` stopped:
