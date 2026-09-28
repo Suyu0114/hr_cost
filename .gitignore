@@ -56,3 +56,9 @@ jspm_packages/
 
 # Microsoft Office lock files
 ~$*
+
+# Word working documents (kept locally, not published)
+*.docx
+
+# Personal code-reading notes (kept locally, not published)
+docs/CODE_GUIDE.md

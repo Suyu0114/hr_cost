@@ -12,12 +12,12 @@ This is the procedure used to install the development version of Frappe inside a
 | Component | Version | Notes |
 |---|---|---|
 | Host OS | Windows 10/11 x64 | |
-| Hypervisor | Oracle VirtualBox 7.x | |
-| Guest OS | Ubuntu Server 24.04.4 LTS | |
-| Frappe | `develop` @ `775f50f` (2026-09-26), `17.0.0-dev` | |
+| Hypervisor | Oracle VirtualBox 7.2.18 | |
+| Guest OS | Ubuntu Server 24.04.5 LTS | |
+| Frappe | `develop` @ `407b551` (2026-09-27), `17.0.0-dev` | `bench list-apps` shows it as `17.x.x-develop` |
 | bench CLI | 5.31.0 | installed with `uv tool` |
 | Python | 3.14.7 | `develop` requires `>=3.14,<3.15`; Ubuntu 24.04 ships 3.12, so Python comes from `uv` |
-| Node.js | 24.x | `develop` requires `>=24` |
+| Node.js | 24.21.0 | `develop` requires `>=24` |
 | Yarn | 1.22.22 | |
 | MariaDB | 10.11.14 (Ubuntu package) | Frappe's version check warns outside 10.6–11.8; upstream CI tests on 11.8 |
 | Redis | 7.0.15 (Ubuntu package) | |
@@ -41,15 +41,15 @@ In VirtualBox Manager, click **New**:
 
 | Setting | Value |
 |---|---|
-| Name | `frappe-dev` |
+| VM Name | `frappe-dev-ub24` |
 | ISO Image | the Ubuntu Server ISO |
-| Type / Version | Linux / Ubuntu (64-bit) |
-| Unattended install | **Skip** (tick *Skip Unattended Installation*), so you choose the options yourself |
+| OS / OS Distribution / OS Version | Linux / Ubuntu / Ubuntu 24.10 (Oracular Oriole) (64-bit) |
+| Proceed with Unattended Installation | **Unticked**, so you choose the options yourself in the installer |
 | Base memory | **8192 MB** (minimum 4096. Building the front-end assets with Node uses a lot of memory) |
 | Processors | **4** (minimum 2) |
 | Hard disk | **40 GB** VDI, dynamically allocated |
 
-Then go to **Settings → Network → Adapter 1**: keep *Attached to: NAT*, open **Advanced → Port Forwarding** and add these rules:
+Before starting the VM, go to **Settings → Network → Adapter 1**: keep *Attached to: NAT*, open **Advanced → Port Forwarding** and add these rules:
 
 | Name | Protocol | Host IP | Host Port | Guest IP | Guest Port |
 |---|---|---|---|---|---|
@@ -62,7 +62,7 @@ Binding the host side to `127.0.0.1` means only your own PC can reach the VM, no
 The same rules from a Windows terminal (with the VM powered off):
 
 ```powershell
-& "C:\Program Files\Oracle\VirtualBox\VBoxManage.exe" modifyvm frappe-dev `
+& "C:\Program Files\Oracle\VirtualBox\VBoxManage.exe" modifyvm frappe-dev-ub24 `
   --natpf1 "ssh,tcp,127.0.0.1,2222,,22" `
   --natpf1 "frappe-web,tcp,127.0.0.1,8000,,8000" `
   --natpf1 "frappe-socketio,tcp,127.0.0.1,9000,,9000"
@@ -86,6 +86,8 @@ From here on, work from a **Windows Terminal / PowerShell** window over SSH, whi
 ssh -p 2222 frappe@127.0.0.1
 ```
 
+## 4. System packages
+
 Update the system (and set your time zone):
 
 ```bash
@@ -94,7 +96,7 @@ sudo timedatectl set-timezone America/Toronto   # optional
 sudo reboot                                     # if a new kernel was installed
 ```
 
-## 4. System packages
+Then install the packages:
 
 ```bash
 sudo apt install -y git curl build-essential pkg-config \

@@ -1,16 +1,18 @@
 # Installation Log: Frappe VM Setup
 
-> **Purpose**: Step-by-step record of the actual VM setup process, with screenshots and notes.
-> This complements [SETUP.md](SETUP.md) which describes the *reference* procedure.
+> **Purpose**: Record of the actual VM setup process, with screenshots, the values each step produced and the problems hit along the way.
+> The commands are in [SETUP.md](SETUP.md), which describes the *reference* procedure. Each step below links to the SETUP.md step it followed.
 
 **Date started**: 2026-09-27
 **Host machine**: Windows, 32 GB RAM
 **VirtualBox version**: 7.2.18 r175117 (Qt6.8.0)
-**Frappe version installed**: `develop` @ `407b551` (2026-09-27), reported as `17.x.x-develop`. SETUP.md was written against `775f50f` (2026-09-26)
+**Frappe version installed**: `develop` @ `407b551` (2026-09-27), `17.0.0-dev` (`bench list-apps` shows it as `17.x.x-develop`)
 
 ---
 
-## Pre-flight Checks
+## Step 1: Host Prerequisites
+
+Checklist: [SETUP.md step 1](SETUP.md#1-host-prerequisites-windows).
 
 | Check | Result | Notes |
 |---|---|---|
@@ -23,43 +25,20 @@
 | VirtualBox execution engine | ⚠️ Windows Hypervisor Platform (NEM) | `VBox.log`: `HM: HMR3Init: Attempting fall back to NEM: AMD-V is not available`. Because VBS owns AMD-V, VirtualBox runs on top of the Windows hypervisor (green turtle icon), which is slower than native AMD-V |
 | Ubuntu Server 24.04 LTS ISO | ✅ Downloaded | `ubuntu-24.04.5-live-server-amd64.iso` |
 
----
-
-## Step 1: Host Prerequisites
-
-- [x] VirtualBox 7.x installed
-- [x] Host RAM sufficient (32 GB)
-- [x] Confirm hardware virtualisation enabled (AMD-V)
-- [x] Check for Hyper-V / Core Isolation interference → ⚠️ Memory Integrity is on, so VirtualBox runs in the slower Windows Hypervisor Platform mode. Everything still works (the install completed and the 23 tests run in ~2.5 s). Turning it off is optional, see SETUP.md step 1
-- [x] Download Ubuntu Server 24.04 LTS ISO (`ubuntu-24.04.5-live-server-amd64.iso`)
+Memory Integrity was left on. Everything still works (the install completed and the 23 tests run in ~2.5 s), so turning it off is optional.
 
 ---
 
 ## Step 2: Create the VM
 
-**Target settings:**
+Settings: [SETUP.md step 2](SETUP.md#2-create-the-vm).
 
-| Setting | Target Value | Actual Value | Status |
-|---|---|---|---|
-| Name | `frappe-dev` | `frappe-dev-ub24` | ✅ |
-| ISO Image | Ubuntu Server **24.04** LTS | `ubuntu-24.04.5-live-server-amd64.iso` | ✅ |
-| Type / Version | Linux / Ubuntu (64-bit) | Linux / Ubuntu 24.10 (64-bit) | ✅ |
-| Skip Unattended Install | ✅ Uncheck "Proceed with Unattended Installation" | Unchecked | ✅ |
-| Base memory | 8192 MB | 8192 MB | ✅ |
-| Processors | 4 | 4 | ✅ |
-| Hard disk | 40 GB VDI, dynamically allocated | 40 GB | ✅ |
+- [x] All VM settings as listed there (`frappe-dev-ub24`, 8192 MB, 4 CPUs, 40 GB, unattended installation unticked)
+- [x] The three NAT port-forwarding rules (ssh 2222 → 22, frappe-web 8000 → 8000, frappe-socketio 9000 → 9000), all on host IP `127.0.0.1`
 
 ![VM creation — OS and ISO settings](screenshots/image1.png)
 
 ![VM creation — Hardware settings (8192 MB RAM, 4 CPUs)](screenshots/image2.png)
-
-**Port Forwarding rules (NAT):**
-
-| Name | Protocol | Host IP | Host Port | Guest IP | Guest Port | Status |
-|---|---|---|---|---|---|---|
-| ssh | TCP | 127.0.0.1 | 2222 | *(empty)* | 22 | ✅ |
-| frappe-web | TCP | 127.0.0.1 | 8000 | *(empty)* | 8000 | ✅ |
-| frappe-socketio | TCP | 127.0.0.1 | 9000 | *(empty)* | 9000 | ✅ |
 
 ![Network settings and Port Forwarding rules](screenshots/image3.png)
 
@@ -79,15 +58,12 @@
 
 ## Step 3: Install Ubuntu Server
 
-- [x] Boot VM from ISO
-- [x] Language: English
+Installer choices: [SETUP.md step 3](SETUP.md#3-install-ubuntu-server). Values on this VM:
+
 - [x] Keyboard: English (US)
-- [x] Type of install: Ubuntu Server (not minimized)
 - [x] Network: DHCP on `enp0s3` → `10.0.2.15/24`
 - [x] Storage: Use entire disk (LVM unticked) → 39.07 GB ext4 on `/`
 - [x] Profile: Your name `suyu`, server name `frappe-dev`, username `frappe`
-- [x] SSH: Install OpenSSH server
-- [x] Featured snaps: none
 - [x] Reboot completed successfully
 
 **Ubuntu version installed**: 24.04.5 LTS (GNU/Linux 6.8.0-142-generic x86_64)
@@ -104,13 +80,7 @@ frappe@frappe-dev:~$
 
 ## Step 4: System Packages
 
-```bash
-sudo apt update && sudo apt -y upgrade
-sudo timedatectl set-timezone America/Toronto
-sudo apt install -y git curl build-essential pkg-config \
-  mariadb-server mariadb-client libmariadb-dev \
-  redis-server
-```
+Commands: [SETUP.md step 4](SETUP.md#4-system-packages).
 
 - [x] System updated
 - [x] Timezone set to America/Toronto
@@ -120,9 +90,7 @@ sudo apt install -y git curl build-essential pkg-config \
 
 ## Step 5: MariaDB Root Password
 
-```bash
-sudo mariadb -e "SET PASSWORD FOR 'root'@'localhost' = PASSWORD('<db-root-password>');"
-```
+Commands: [SETUP.md step 5](SETUP.md#5-mariadb-root-password).
 
 - [x] Root password set
 - [x] Verified: `mariadb -h 127.0.0.1 -u root -p -e "select version();"` → **10.11.14-MariaDB**
@@ -131,12 +99,7 @@ sudo mariadb -e "SET PASSWORD FOR 'root'@'localhost' = PASSWORD('<db-root-passwo
 
 ## Step 6: Node.js 24 and Yarn (via nvm)
 
-```bash
-curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.40.3/install.sh | bash
-source ~/.bashrc
-nvm install 24
-npm install -g yarn
-```
+Commands: [SETUP.md step 6](SETUP.md#6-nodejs-24-and-yarn-via-nvm).
 
 - [x] nvm installed (v0.40.3)
 - [x] Node.js 24.x installed — actual version: **v24.21.0**
@@ -146,12 +109,7 @@ npm install -g yarn
 
 ## Step 7: Python 3.14 (via uv) and bench CLI
 
-```bash
-curl -LsSf https://astral.sh/uv/install.sh | sh
-source $HOME/.local/bin/env
-uv python install 3.14
-uv tool install frappe-bench
-```
+Commands: [SETUP.md step 7](SETUP.md#7-python-314-via-uv-and-the-bench-cli).
 
 - [x] uv installed — version: **0.12.19**
 - [x] Python 3.14 installed — actual version: **3.14.7** (`/home/frappe/.local/share/uv/python/cpython-3.14-linux-x86_64-gnu/bin/python3.14`)
@@ -161,11 +119,7 @@ uv tool install frappe-bench
 
 ## Step 8: Create the bench (develop branch)
 
-```bash
-cd ~
-bench init --frappe-branch develop --python "$(uv python find 3.14)" frappe-bench
-cd ~/frappe-bench
-```
+Commands: [SETUP.md step 8](SETUP.md#8-create-the-bench-on-develop).
 
 - [x] bench init completed
 - [x] Expected warning: "Cannot connect to redis_cache" (OK at this stage)
@@ -174,15 +128,7 @@ cd ~/frappe-bench
 
 ## Step 9: Create Site + Developer Mode
 
-```bash
-cd ~/frappe-bench
-bench new-site hr.localhost \
-  --db-root-password '<db-root-password>' \
-  --admin-password '<admin-password>' \
-  --set-default
-bench --site hr.localhost set-config developer_mode 1
-bench --site hr.localhost clear-cache
-```
+Commands: [SETUP.md step 9](SETUP.md#9-create-a-site-and-turn-on-developer-mode).
 
 - [x] Site created (`hr.localhost`, set as default site)
 - [x] Developer mode enabled
@@ -191,10 +137,7 @@ bench --site hr.localhost clear-cache
 
 ## Step 10: Bind Address for Windows Access
 
-```bash
-echo 'export FRAPPE_BIND_ADDR=0.0.0.0' >> ~/.bashrc
-source ~/.bashrc
-```
+Commands: [SETUP.md step 10](SETUP.md#10-make-the-dev-server-reachable-from-windows).
 
 - [x] FRAPPE_BIND_ADDR set to 0.0.0.0 (verified in step 11: `web.1` logs `Running on all addresses (0.0.0.0)`)
 
@@ -202,10 +145,7 @@ source ~/.bashrc
 
 ## Step 11: Start Frappe + Setup Wizard
 
-```bash
-cd ~/frappe-bench
-bench start
-```
+Commands: [SETUP.md step 11](SETUP.md#11-start-frappe-and-finish-the-setup-wizard).
 
 - [x] `bench start` running inside `tmux` (session `bench`)
 - [x] http://localhost:8000 accessible from Windows browser
@@ -232,7 +172,7 @@ bench start
 
 ## Step 12: Install HR Cost App
 
-The app has no git remote yet, so instead of `bench get-app` the folder was copied from Windows with `scp`. `bench get-app` would also have pip-installed the app and added it to `sites/apps.txt`. With `scp`, both have to be done by hand.
+At this point the app had no git remote yet, so instead of `bench get-app` ([SETUP.md step 12](SETUP.md#12-install-the-hr-cost-app)) the folder was copied from Windows with `scp`. `bench get-app` would also have pip-installed the app and added it to `sites/apps.txt`. With `scp`, both have to be done by hand.
 
 From Windows (PowerShell):
 
@@ -280,11 +220,7 @@ bench start
 
 ## Step 13: Run Tests
 
-```bash
-cd ~/frappe-bench
-bench --site hr.localhost set-config allow_tests true
-bench --site hr.localhost run-tests --app hr_cost
-```
+Commands: [SETUP.md step 13](SETUP.md#13-run-the-tests).
 
 - [x] `bench start` running in the tmux session (the tests need its Redis)
 - [x] **Ran 23 tests in 2.455s — OK**
