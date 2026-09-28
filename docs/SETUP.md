@@ -210,7 +210,7 @@ Stop `bench start` first (**Ctrl+C**). bench installs apps in editable mode, whi
 
 ```bash
 cd ~/frappe-bench
-bench get-app https://github.com/<your-account>/hr_cost --branch main
+bench get-app https://github.com/Suyu0114/hr_cost --branch main
 bench --site hr.localhost install-app hr_cost
 bench --site hr.localhost execute hr_cost.demo.make_demo_data   # optional sample data
 bench start

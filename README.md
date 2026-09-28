@@ -73,7 +73,7 @@ The brief lists the fields literally. A few of them were changed on purpose, so 
 ```bash
 cd ~/frappe-bench
 # stop `bench start` first (Ctrl+C); running processes don't pick up a newly added app
-bench get-app https://github.com/<your-account>/hr_cost --branch main
+bench get-app https://github.com/Suyu0114/hr_cost --branch main
 bench --site <your-site> install-app hr_cost
 bench start
 ```

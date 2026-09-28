@@ -293,6 +293,58 @@ bench --site hr.localhost run-tests --app hr_cost
 
 ---
 
+## Step 14: Push to GitHub
+
+The repository was created in the VM and pushed from there, so `~/frappe-bench/apps/hr_cost` in the VM is the working copy from now on. It is edited through VS Code Remote-SSH.
+
+Windows `~/.ssh/config`, so that `ssh frappe-dev` and VS Code Remote-SSH log in with the key:
+
+```
+Host frappe-dev
+    HostName 127.0.0.1
+    Port 2222
+    User frappe
+    IdentityFile ~/.ssh/frappe_dev_ed25519
+    IdentitiesOnly yes
+```
+
+In the VM (VS Code terminal):
+
+```bash
+git config --global user.name "<name>"
+git config --global user.email "<email>"
+git config --global init.defaultBranch main
+ssh-keygen -t ed25519 -C "<email>" -f ~/.ssh/id_ed25519 -N ""
+cat ~/.ssh/id_ed25519.pub     # GitHub → Settings → SSH and GPG keys → New SSH key
+ssh -T git@github.com         # answer "yes" to the host key prompt
+
+cd ~/frappe-bench/apps/hr_cost
+git init
+git add .
+git commit -m "Initial commit: HR Cost app"
+git remote add origin git@github.com:Suyu0114/hr_cost.git
+git push -u origin main
+```
+
+- [x] Windows and VM copies compared with `md5sum`. Only `.gitignore` and `docs/setup-procedure.docx` differed, and the newer Windows versions were copied to the VM
+- [x] `~$*` added to `.gitignore`: Word keeps a hidden lock file (`docs/~$tup-procedure.docx`) next to an open document, and one had been copied to the VM
+- [x] `ssh -T git@github.com` → `Hi Suyu0114! You've successfully authenticated`. The accepted host key `SHA256:+DiY3wvvV6TuJJhbpZisF/zLDA0zPMSvHdkr4UvCOqU` matches `SHA256_ED25519` in <https://api.github.com/meta>
+- [x] Initial commit `2531d07` (52 files) pushed to <https://github.com/Suyu0114/hr_cost> (public)
+- [x] CI (`.github/workflows/ci.yml`) passed on GitHub Actions: a fresh `develop` bench with MariaDB 11.8, then `run-tests --app hr_cost` ([run 36380208229](https://github.com/Suyu0114/hr_cost/actions/runs/36380208229))
+
+**Issues encountered:**
+
+1. ❌ VS Code Remote-SSH stopped at `frappe@127.0.0.1's password:` and the attempt was cancelled.
+   The `frappe-dev` host entry had no `IdentityFile`, so VS Code didn't offer the key and asked for the password in a small box at the top of the window, which is easy to miss.
+   🔧 Added `IdentityFile` and `IdentitiesOnly yes` (above).
+2. ❌ The VM stopped responding for minutes at a time. At about 23:20, key login hung right after `Offering public key` and `/api/method/ping` returned HTTP 500. At 02:38, VS Code Remote-SSH failed with `kex_exchange_identification: read: Connection reset`. Each time the VM console looked normal afterwards (`uptime`, `free -m`, `df -h /`).
+   `VBox.log` shows the VM getting no CPU time: `Guest seems to be unresponsive. Last heartbeat received 664 seconds ago` (about 23:19–23:30) and `TM: Not bothering to attempt catching up a 1 403 071 657 831 ns lag` (02:10–02:33). The second gap matches Windows **Modern Standby** to the second: the System log has Kernel-Power 506 *entering Modern Standby* at 01:35 and 507 *exiting* at 02:33:46. There is no standby event around 23:20, so the cause of the first gap is still open.
+   🔧 Keep Windows awake while the VM is in use (Settings → System → Power & battery → Screen, sleep & hibernate timeouts → sleep *Never* when plugged in). When a connection fails, check the VM console first, and give the VM a minute after Windows wakes up.
+3. ⚠️ The first push went to `https://github.com/Suyu0114/hr_cost.git`. It worked in the VS Code terminal because VS Code passes its own GitHub sign-in to git, but it would fail from a plain `ssh` session.
+   🔧 `git remote set-url origin git@github.com:Suyu0114/hr_cost.git`, so pushes use the VM's own key.
+
+---
+
 ## Post-install notes
 
 | Item | Value / note |
@@ -300,7 +352,8 @@ bench --site hr.localhost run-tests --app hr_cost
 | Time zone | ✅ **America/Toronto** in System Settings (changed from the wizard's America/Atikokan), `site_config.json` and the VM OS |
 | Scheduler | Enabled (`bench --site hr.localhost scheduler status`) |
 | Redis warning | `WARNING Memory overcommit must be enabled!` on every `bench start`. Harmless on a dev VM. To silence it: `sudo sysctl vm.overcommit_memory=1` (add it to `/etc/sysctl.conf` to keep it) |
-| SSH key | `~/.ssh/frappe_dev_ed25519` on Windows is authorised in the VM's `~/.ssh/authorized_keys` (`ssh -i ~/.ssh/frappe_dev_ed25519 -p 2222 frappe@127.0.0.1`) |
+| SSH key | `~/.ssh/frappe_dev_ed25519` on Windows is authorised in the VM's `~/.ssh/authorized_keys`, and is the `IdentityFile` of `Host frappe-dev` in `~/.ssh/config` (`ssh frappe-dev`) |
+| Git remote | `git@github.com:Suyu0114/hr_cost.git`. The VM's own `~/.ssh/id_ed25519` is registered on GitHub |
 
 ---
 
@@ -315,3 +368,6 @@ bench --site hr.localhost run-tests --app hr_cost
 | `install-app`: *App hr_cost not in apps.txt* / *No module named 'frappehr_cost'* | `printf "frappe\nhr_cost\n" > sites/apps.txt` (`echo >>` joined it onto the last line) |
 | `bench start`: *Address already in use* on 11000 / 13000 / 8000 | An old `bench start` was suspended with Ctrl+Z. Stop the leftover `honcho` process group, and always stop `bench start` with Ctrl+C |
 | HR Cost tile: *Page hr-cost not found* | Tile route changed from `/desk/hr-cost` to `/desk/work-record` in `hooks.py` |
+| SSH hangs, or VS Code: *kex_exchange_identification: read: Connection reset* | The VM was paused, for example while Windows was in Modern Standby (`VBox.log`: *Guest seems to be unresponsive*). Keep Windows awake while using the VM, and check the VM console first |
+| VS Code Remote-SSH asks for a password | Add `IdentityFile ~/.ssh/frappe_dev_ed25519` and `IdentitiesOnly yes` to `Host frappe-dev` in `~/.ssh/config` |
+| First push went over HTTPS, using VS Code's GitHub sign-in | `git remote set-url origin git@github.com:Suyu0114/hr_cost.git` |
